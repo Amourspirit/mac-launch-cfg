@@ -57,6 +57,21 @@ sessions are clean.
 The script writes to `/Library` and changes ownership, so `sudo` is
 required for all non-dry-run invocations.
 
+The target user is auto-detected in this order:
+
+1. `EL_USER` environment variable (explicit override)
+2. `SUDO_USER` (the user who ran `sudo`)
+3. GUI console owner on macOS (`stat -f %Su /dev/console`)
+4. `logname`
+5. `$USER` / `whoami`
+
+The home directory is resolved via `~<user>` (falling back to
+`/Users/<user>`). To force a specific target user:
+
+```zsh
+sudo EL_USER=el ./mac-launch-cfg.zsh
+```
+
 ```zsh
 # Apply (default): copy to ~el/Library and disable /Library originals
 sudo ./mac-launch-cfg.zsh

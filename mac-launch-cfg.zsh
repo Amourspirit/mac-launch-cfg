@@ -19,9 +19,36 @@ setopt ERR_EXIT PIPE_FAIL
 
 # ---- Config ----------------------------------------------------------------
 
-EL_USER="el"
+detect_el_user() {
+  # Resolve the target user, in priority order:
+  #   1. $EL_USER already set in environment (explicit override)
+  #   2. $SUDO_USER (set when invoked via sudo)
+  #   3. GUI console owner on macOS (stat -f %Su /dev/console)
+  #   4. logname (controlling terminal's login name)
+  #   5. $USER / whoami as last resort
+  local u=""
+  if [[ -n "${EL_USER:-}" ]]; then
+    print -r -- "$EL_USER"; return
+  fi
+  if [[ -n "${SUDO_USER:-}" && "$SUDO_USER" != "root" ]]; then
+    print -r -- "$SUDO_USER"; return
+  fi
+  if [[ -e /dev/console ]] && u=$(stat -f %Su /dev/console 2>/dev/null) && [[ -n "$u" && "$u" != "root" ]]; then
+    print -r -- "$u"; return
+  fi
+  if u=$(logname 2>/dev/null) && [[ -n "$u" && "$u" != "root" ]]; then
+    print -r -- "$u"; return
+  fi
+  print -r -- "${USER:-$(whoami)}"
+}
+
+EL_USER="$(detect_el_user)"
 EL_GROUP="wheel"
-EL_HOME="/Users/${EL_USER}"
+# Resolve home dir via ~user (falls back to /Users/<user> if the user does
+# not exist on this host, e.g. running --dry-run on Linux).
+EL_HOME=""
+{ EL_HOME=$(eval print -r -- "~${EL_USER}") } 2>/dev/null || EL_HOME=""
+[[ -z "$EL_HOME" || "$EL_HOME" == "~${EL_USER}" ]] && EL_HOME="/Users/${EL_USER}"
 
 SRC_AGENTS="/Library/LaunchAgents"
 SRC_DAEMONS="/Library/LaunchDaemons"
@@ -202,7 +229,7 @@ done
 
 require_root "$@"
 
-log "mode=${MODE} dry_run=${DRY_RUN}"
+log "mode=${MODE} dry_run=${DRY_RUN} target_user=${EL_USER} home=${EL_HOME}"
 
 case "$MODE" in
   apply)
@@ -234,6 +261,6 @@ case "$MODE" in
 esac
 
 log "done: changed=${APPLIED} skipped=${SKIPPED} failed=${FAILED}"
-log "Note: changes take effect on next login/reboot. To load now for el,"
+log "Note: changes take effect on next login/reboot. To load now for ${EL_USER},"
 log "      have el run: launchctl load ~/Library/LaunchAgents/<plist>"
 log "      For daemons, a reboot is the cleanest way to apply."

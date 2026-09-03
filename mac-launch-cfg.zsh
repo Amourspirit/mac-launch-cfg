@@ -91,7 +91,7 @@ usage() {
   cat <<EOF
 Usage: sudo ${ZSH_ARGZERO:-$0} [--undo|--redo|--dry-run|--help]
 
-  (no flag)   Apply: copy el-only plists to ${EL_HOME}/Library/... ,
+  (no flag)   Apply: copy user1-only plists to ${EL_HOME}/Library/... ,
               chown ${EL_USER}:${EL_GROUP}, then rename originals in
               /Library/... to *${DISABLED_SUFFIX} so they no longer
               auto-start system-wide.
@@ -164,7 +164,7 @@ apply_one() {
 
   log "apply ${name}"
 
-  # Copy to el's ~/Library (only if not already present)
+  # Copy to user1's ~/Library (only if not already present)
   if [[ -e "$dst" ]]; then
     log "  copy exists, leaving: ${dst}"
   else
@@ -262,5 +262,5 @@ esac
 
 log "done: changed=${APPLIED} skipped=${SKIPPED} failed=${FAILED}"
 log "Note: changes take effect on next login/reboot. To load now for ${EL_USER},"
-log "      have el run: launchctl load ~/Library/LaunchAgents/<plist>"
+log "      have user1 run: launchctl load ~/Library/LaunchAgents/<plist>"
 log "      For daemons, a reboot is the cleanest way to apply."

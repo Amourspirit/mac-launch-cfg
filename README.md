@@ -117,8 +117,8 @@ chmod +x ./mac-launch-cfg.zsh
 ### Why `sudo`?
 
 - `/Library/LaunchAgents` and `/Library/LaunchDaemons` are owned by
-  `root:staff` — renaming files there requires root.
-- The copies placed in `/Users/el/Library/...` are `chown`ed to
+  `root:wheel` — renaming files there requires root.
+- The copies placed in `~/Library/...` are `chown`ed to
   `user1:staff`, which also requires root.
 - `--dry-run` does not touch the filesystem and does not require root.
 
@@ -159,7 +159,7 @@ Everything the script does is a `mv` or a `cp` of a plist file:
   ```
 - To remove a single copy manually:
   ```zsh
-  sudo rm /Users/el/Library/LaunchAgents/<name>.plist
+  sudo rm ~/Library/LaunchAgents/<name>.plist
   ```
 - Or just run `sudo ./mac-launch-cfg.zsh --undo` to reverse everything
   the script did.

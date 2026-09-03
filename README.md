@@ -16,7 +16,7 @@ After Edit run using `--dry-run` and be certain everything check out.
 ### Example dry-run
 
 ```sh
-sudo zsh mac-launch-cfg.zsh
+sudo zsh mac-launch-cfg.zsh --dry-run
 ```
 
 

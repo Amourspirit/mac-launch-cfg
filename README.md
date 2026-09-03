@@ -1,37 +1,53 @@
 # mac-launch-cfg
 
-A single `zsh` script to isolate the `el` user's LaunchAgents and
+A single `zsh` script to isolate the `user1` user's LaunchAgents and
 LaunchDaemons on a shared Mac Studio (M3 Ultra, 256 GB RAM) so they no
-longer auto-start for other users such as `paul`.
+longer auto-start for other users such as `user2`.
+
+## Warning
+
+**DO NOT** run this script on your Mac Os as is!!!
+
+You **MUST** edit [mac-launch-cfg.zsh](mac-launch-cfg.zsh) to match your specific needs.
+
+Edit `LAUNCH_AGENTS` and `LAUNCH_DAEMONS` to meet your needs before running this script.
+After Edit run using `--dry-run` and be certain everything check out.
+
+### Example dry-run
+
+```sh
+sudo zsh mac-launch-cfg.zsh
+```
+
 
 ## The issue
 
 The Mac has two accounts:
 
-- `el`  — local usage. Has Logitech, RME, Focusrite, MOTU, Native
+- `user1`  — local usage. Has Logitech, RME, Focusrite, MOTU, Native
   Instruments, Softube, Windscribe, Pace/Eden, AudioMovers, etc.
   installed. Their helpers register system-wide in
   `/Library/LaunchAgents` and `/Library/LaunchDaemons`.
-- `paul` — remote development. Does not need any of `el`'s peripheral
+- `user2` — remote development. Does not need any of `user1`'s peripheral
   or DAW helper software.
 
 Because those plists live in `/Library/...`, macOS launches them for
-**every** user session and for the system as a whole. When `paul`
-logs in before `el`, `el`'s helpers spin up under `paul`, and when
-`el` then logs in, `el`'s mouse and keyboard misbehave because the
+**every** user session and for the system as a whole. When `user2`
+logs in before `user1`, `user1`'s helpers spin up under `user2`, and when
+`user1` then logs in, `user1`'s mouse and keyboard misbehave because the
 Logitech agents are already owned by another session.
 
 ## The solution
 
-For each `el`-only plist:
+For each `user1`-only plist:
 
 1. Copy it from `/Library/LaunchAgents` (or `/Library/LaunchDaemons`)
-   into `/Users/el/Library/LaunchAgents` (or `.../LaunchDaemons`).
-2. `chown el:wheel` and `chmod 644` the copy.
+   into `~/Library/LaunchAgents` (or `.../LaunchDaemons`).
+2. `chown user1:staff` and `chmod 644` the copy.
 3. Rename the original in `/Library/...` by appending `.disabled` so
    `launchd` no longer picks it up at boot / login.
 
-The helpers now only run when `el` logs in, and `paul`'s remote
+The helpers now only run when `user1` logs in, and `user2`'s remote
 sessions are clean.
 
 ### LaunchAgents moved out of `/Library/LaunchAgents`
@@ -69,17 +85,17 @@ The home directory is resolved via `~<user>` (falling back to
 `/Users/<user>`). To force a specific target user:
 
 ```zsh
-sudo EL_USER=el ./mac-launch-cfg.zsh
+sudo EL_USER=userl ./mac-launch-cfg.zsh
 ```
 
 ```zsh
-# Apply (default): copy to ~el/Library and disable /Library originals
+# Apply (default): copy to ~/Library and disable /Library originals whereas user1 is the current user.
 sudo ./mac-launch-cfg.zsh
 
 # Preview apply without making any changes
 ./mac-launch-cfg.zsh --dry-run
 
-# Undo: restore original /Library names, remove copies from ~el/Library
+# Undo: restore original /Library names, remove copies from ~/Library
 sudo ./mac-launch-cfg.zsh --undo
 
 # Preview undo without making any changes
@@ -101,14 +117,14 @@ chmod +x ./mac-launch-cfg.zsh
 ### Why `sudo`?
 
 - `/Library/LaunchAgents` and `/Library/LaunchDaemons` are owned by
-  `root:wheel` — renaming files there requires root.
+  `root:staff` — renaming files there requires root.
 - The copies placed in `/Users/el/Library/...` are `chown`ed to
-  `el:wheel`, which also requires root.
+  `user1:staff`, which also requires root.
 - `--dry-run` does not touch the filesystem and does not require root.
 
 ### When do changes take effect?
 
-- LaunchAgents load at user login. `el` will need to log out and back
+- LaunchAgents load at user login. `user1` will need to log out and back
   in (or run `launchctl load ~/Library/LaunchAgents/<plist>` manually).
 - LaunchDaemons load at boot. A reboot is the cleanest way to apply.
 
@@ -118,13 +134,13 @@ chmod +x ./mac-launch-cfg.zsh
   *renamed* to `<name>.plist.disabled`, not removed. They can be
   restored at any time with `--undo`.
 - **Copies never overwrite existing files.** If a plist already
-  exists in `~el/Library/...`, the existing copy is left alone
+  exists in `~/Library/...`, the existing copy is left alone
   (ownership/permissions are still normalized).
 - **Idempotent.** Re-running apply skips any plist that is already
   disabled. Re-running undo skips any plist that is already restored.
 - **Reversible.** `--undo` moves each `*.plist.disabled` back to
   `*.plist` in `/Library/...` and removes the copy from
-  `~el/Library/...`, returning the system to its original state.
+  `~/Library/...`, returning the system to its original state.
 - **Previewable.** `--dry-run` prints every action (`cp`, `mv`,
   `chown`, `chmod`, `rm`) it would perform without touching disk.
 - **Explicit list.** The script only touches the plists explicitly

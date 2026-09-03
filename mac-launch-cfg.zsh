@@ -1,10 +1,10 @@
 #!/usr/bin/env zsh
 # mac-launch-cfg.zsh
 #
-# Move `el`-only LaunchAgents/LaunchDaemons out of the system-wide
+# Move `user1`-only LaunchAgents/LaunchDaemons out of the system-wide
 # /Library location (where they auto-start for every user session)
-# and into `el`'s per-user ~/Library location so they only load
-# when `el` logs in.
+# and into `user1`'s per-user ~/Library location so they only load
+# when `user1` logs in.
 #
 # Default action  : apply (copy -> chown -> disable original)
 # --undo          : reverse (restore original names, remove copies)
@@ -43,7 +43,7 @@ detect_el_user() {
 }
 
 EL_USER="$(detect_el_user)"
-EL_GROUP="wheel"
+EL_GROUP="staff"
 # Resolve home dir via ~user (falls back to /Users/<user> if the user does
 # not exist on this host, e.g. running --dry-run on Linux).
 EL_HOME=""

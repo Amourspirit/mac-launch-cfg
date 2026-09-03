@@ -3,11 +3,11 @@
 ## What this repo is
 
 A single-purpose zsh tool that runs on **macOS** (Mac Studio, multi-user)
-to relocate `el`-only LaunchAgents/LaunchDaemons out of `/Library/...`
-into `/Users/el/Library/...` so they don't start under other users
+to relocate `current user`-only LaunchAgents/LaunchDaemons out of `/Library/...`
+into `~/Library/...` so they don't start under other users
 (e.g. `paul`). See `README.md` for the issue write-up.
 
-Development happens on a Linux box (`/home/paul/scripts/mac-launch-cfg/`);
+Development happens on a Linux box (`~/scripts/mac-launch-cfg/`);
 the script only actually runs on the target Mac.
 
 ## Layout
@@ -50,4 +50,4 @@ verification step.
   created dirs. Matches macOS `~/Library/Launch*` norms.
 - Effects: LaunchAgents load at next login for `el`; LaunchDaemons
   require reboot. Do not add auto-`launchctl load/unload` — the script
-  runs as root but the agents belong to `el`'s session.
+  runs as root but the agents belong to `current users`'s session.

@@ -43,7 +43,10 @@ For each `user1`-only plist:
 
 1. Copy it from `/Library/LaunchAgents` (or `/Library/LaunchDaemons`)
    into `~/Library/LaunchAgents` (or `.../LaunchDaemons`).
-2. `chown user1:staff` and `chmod 644` the copy.
+2. `chown user1:staff` the copy and `chmod` it to `644`, **preserving the
+   original's executable (`x`) bits** — so a source plist that is
+   `755` (e.g. `com.logi.optionsplus.plist`) stays executable instead of
+   being flattened to non-executable `644`.
 3. Rename the original in `/Library/...` by appending `.disabled` so
    `launchd` no longer picks it up at boot / login.
 
@@ -135,7 +138,8 @@ chmod +x ./mac-launch-cfg.zsh
   restored at any time with `--undo`.
 - **Copies never overwrite existing files.** If a plist already
   exists in `~/Library/...`, the existing copy is left alone
-  (ownership/permissions are still normalized).
+  (ownership/permissions are still normalized, including restoring the
+  source's `x` bits on copies made before this behavior existed).
 - **Idempotent.** Re-running apply skips any plist that is already
   disabled. Re-running undo skips any plist that is already restored.
 - **Reversible.** `--undo` moves each `*.plist.disabled` back to

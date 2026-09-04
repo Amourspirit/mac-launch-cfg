@@ -81,6 +81,9 @@ LAUNCH_DAEMONS=(
 
 MODE="apply"
 DRY_RUN=0
+# When sourced as a test library (test/mode.zsh sets EL_SOURCED=1), the main
+# block below is skipped. Defaults to 0 so normal execution always runs main.
+EL_SOURCED="${EL_SOURCED:-0}"
 APPLIED=0
 SKIPPED=0
 FAILED=0
@@ -121,6 +124,33 @@ run() {
   else
     "$@"
   fi
+}
+
+# src_mode <file> — print a file's permission bits as an octal string
+# (e.g. "755"). Uses macOS `stat -f %Lp` or GNU `stat -c %a` on other hosts
+# so --dry-run previews work anywhere. Returns empty on failure.
+src_mode() {
+  if [[ "$(uname -s)" == "Darwin" ]]; then
+    stat -f '%Lp' "$1" 2>/dev/null
+  else
+    stat -c '%a' "$1" 2>/dev/null
+  fi
+}
+
+# target_mode <src_octal> — print the mode the copy should get:
+# the source plist's execute bits preserved verbatim, read/write normalized
+# to the 644 baseline. Returns an octal string (e.g. "755").
+#
+# Input is the source plist's mode as a (possibly leading-zero-padded) octal
+# string, as produced by `stat -f %Lp`. Uses zsh 8# base notation because zsh
+# does NOT treat leading-0 integers as octal inside (( )).
+target_mode() {
+  local oct="${1#0}"
+  oct="${oct#0}"
+  [[ -z "$oct" ]] && oct="0"
+  local -i m=$(( 8#${oct} ))
+  local -i t=$(( (m & 8#111) | 8#644 ))
+  printf '%o' "$t"
 }
 
 require_root() {
@@ -164,14 +194,19 @@ apply_one() {
 
   log "apply ${name}"
 
+  # Compute the copy mode: preserve the source plist's x bits, pin rw to 644.
+  local smode tmode
+  smode="$(src_mode "$src")" || smode="644"
+  tmode="$(target_mode "$smode")"
+
   # Copy to user1's ~/Library (only if not already present)
   if [[ -e "$dst" ]]; then
-    log "  copy exists, leaving: ${dst}"
+    log "  copy exists, normalizing mode to ${tmode}: ${dst}"
   else
     run cp -p "$src" "$dst"
   fi
   run chown "${EL_USER}:${EL_GROUP}" "$dst"
-  run chmod 644 "$dst"
+  run chmod "$tmode" "$dst"
 
   # Disable the system-wide original by renaming
   run mv "$src" "$disabled"
@@ -213,6 +248,10 @@ undo_one() {
 }
 
 # ---- Arg parse -------------------------------------------------------------
+
+# When sourced as a library (e.g. by test/mode.zsh, EL_SOURCED=1) only the
+# function definitions above are loaded; the arg parse + main below is skipped.
+if (( ! EL_SOURCED )); then
 
 while (( $# > 0 )); do
   case "$1" in
@@ -264,3 +303,5 @@ log "done: changed=${APPLIED} skipped=${SKIPPED} failed=${FAILED}"
 log "Note: changes take effect on next login/reboot. To load now for ${EL_USER},"
 log "      have user1 run: launchctl load ~/Library/LaunchAgents/<plist>"
 log "      For daemons, a reboot is the cleanest way to apply."
+
+fi  # EL_SOURCED guard

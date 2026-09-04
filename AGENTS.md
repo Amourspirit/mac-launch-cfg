@@ -22,12 +22,13 @@ the script only actually runs on the target Mac.
 ## Commands
 
 - Syntax check (safe on Linux): `zsh -n mac-launch-cfg.zsh`
+- Unit test for the mode-preservation formula: `zsh test/mode.zsh`
 - Preview logic on any host: `./mac-launch-cfg.zsh --dry-run`
   (also `--undo --dry-run`)
 - Real run (Mac only, root): `sudo ./mac-launch-cfg.zsh [--undo|--redo]`
 
-There is no test suite, no linter config, no CI. Dry-run is the
-verification step.
+There is no CI. `zsh -n`, `test/mode.zsh`, and `--dry-run` are the
+verification steps.
 
 ## Conventions / gotchas
 
@@ -46,8 +47,14 @@ verification step.
   pre-increment value is 0 and would abort under `ERR_EXIT`.
 - Root check is skipped under `--dry-run` so previews work as any user
   on any OS.
-- Ownership target is `<user>:staff`, perms `644` for plists, `755` for
-  created dirs. Matches macOS `~/Library/Launch*` norms.
+- Ownership target is `<user>:staff`, perms `755` for created dirs, and
+  `644` **plus the source's `x` bits** for plists — `target_mode`
+  computes `(src & 0111) | 0644` so executable plists (e.g.
+  `com.logi.optionsplus.plist`, mode `755`) stay executable. See
+  `test/mode.zsh` for the formula's expected values.
+- `EL_SOURCED=1` sources `mac-launch-cfg.zsh` as a library (function
+  definitions only, skipping main) so `test/mode.zsh` can unit-test
+  `target_mode`. The main block is guarded by `if (( ! EL_SOURCED ))`.
 - Effects: LaunchAgents load at next login for `<user>`; LaunchDaemons
   require reboot. Do not add auto-`launchctl load/unload` — the script
   runs as root but the agents belong to `current users`'s session.

@@ -51,3 +51,17 @@ verification step.
 - Effects: LaunchAgents load at next login for `<user>`; LaunchDaemons
   require reboot. Do not add auto-`launchctl load/unload` — the script
   runs as root but the agents belong to `current users`'s session.
+
+## Agent skills
+
+### Issue tracker
+
+Issues are tracked as local markdown files under `.scratch/<feature>/`. See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+Five canonical triage roles, each label string equal to its name. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: root `CONTEXT.md` + `docs/adr/`. See `docs/agents/domain.md`.
